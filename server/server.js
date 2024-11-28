@@ -2,44 +2,79 @@ const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const fs = require('fs');
+const path = require('path');
+const cors = require('cors');
 
-// Initialize AWS Textract
-const textract = new AWS.Textract({
-    region: 'ap-south-1',  // Ensure this matches the region where your Textract service is available
-    credentials: new AWS.Credentials('AKIAXNGUVAKSQOE23HV2', 'oSbwiCPAMR/mNnjBvfuf5PB80gTa6oPIbAYcJn1+'), // Replace with your AWS credentials
+// Initialize AWS Textract and Translate clients
+const textract = new AWS.Textract({ region: 'ap-south-1'
+    , credentials: new AWS.Credentials('AKIAXNGUVAKSQOE23HV2', 'oSbwiCPAMR/mNnjBvfuf5PB80gTa6oPIbAYcJn1+'), // Use your desired region
+ },
+    
+);
+const translate = new AWS.Translate({ region: 'ap-south-1' ,
+    credentials: new AWS.Credentials('AKIAXNGUVAKSQOE23HV2', 'oSbwiCPAMR/mNnjBvfuf5PB80gTa6oPIbAYcJn1+'), // Use your desired region
 });
 
 const app = express();
-const port = 8080;
+app.use(cors()); // Enable CORS for all routes
+app.use(express.json()); // For parsing JSON in requests
 
-// Configure multer for file upload
+// Setup Multer for file uploads
 const upload = multer({ dest: 'uploads/' });
 
+// Textract endpoint
 app.post('/upload', upload.single('image'), (req, res) => {
-    const filePath = req.file.path;
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
 
-    // Read the file as a buffer
-    const fileBytes = fs.readFileSync(filePath);
+  const filePath = path.join(__dirname, req.file.path);
+  const fileBuffer = fs.readFileSync(filePath);
 
-    // Call AWS Textract to detect text in the document
-    textract.detectDocumentText({ Document: { Bytes: fileBytes } }, (err, data) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Failed to process the document.' });
-        }
+  const params = {
+    Document: {
+      Bytes: fileBuffer,
+    },
+  };
 
-        // Extract text from Textract response
-        const extractedText = data.Blocks.filter(block => block.BlockType === 'LINE').map(block => block.Text);
-        console.log(extractedText);
+  textract.detectDocumentText(params, (err, data) => {
+    if (err) {
+      console.error('Error processing document:', err);
+      return res.status(500).send('Error processing document.');
+    }
 
-        // Clean up the uploaded file
-        fs.unlinkSync(filePath);
+    const textBlocks = data.Blocks.filter(block => block.BlockType === 'LINE').map(block => block.Text);
 
-        // Send the extracted text as a response
-        res.json({ text: extractedText });
-    });
+    res.json({ text: textBlocks });
+    fs.unlinkSync(filePath); // Clean up the uploaded file
+  });
 });
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+// Translate endpoint
+app.post('/translate', (req, res) => {
+  const { text, targetLanguage } = req.body;
+
+  if (!text || !targetLanguage) {
+    return res.status(400).send('Text and target language are required.');
+  }
+
+  const params = {
+    Text: text,
+    SourceLanguageCode: 'auto', // Detect the source language automatically
+    TargetLanguageCode: targetLanguage, // e.g., 'es' for Spanish, 'fr' for French
+  };
+
+  translate.translateText(params, (err, data) => {
+    if (err) {
+      console.error('Error translating text:', err);
+      return res.status(500).send('Error translating text.');
+    }
+
+    res.json({ translatedText: data.TranslatedText });
+  });
+});
+
+// Start the server
+app.listen(8080, () => {
+  console.log('Server is running on port 8080');
 });
