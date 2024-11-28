@@ -4,8 +4,10 @@ import axios from 'axios';
 function App() {
   const [image, setImage] = useState(null);
   const [recognizedText, setRecognizedText] = useState([]);
+  const [translatedText, setTranslatedText] = useState('');
+  const [targetLanguage, setTargetLanguage] = useState(''); // e.g., 'es' for Spanish
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Handle file input change
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -13,10 +15,9 @@ function App() {
     }
   };
 
-  // Handle file upload to the server
   const handleFileUpload = async () => {
     if (!image) {
-      alert('Please select an image file first.');
+      setErrorMessage('Please select an image file first.');
       return;
     }
 
@@ -25,39 +26,100 @@ function App() {
 
     try {
       const response = await axios.post('http://localhost:8080/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // Store the recognized text in state
       setRecognizedText(response.data.text);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Error uploading image.');
+      setErrorMessage('Error uploading image.');
+    }
+  };
+
+  const handleTranslate = async () => {
+    if (!recognizedText.length || !targetLanguage) {
+      setErrorMessage('Please ensure text is available and target language is selected.');
+      return;
+    }
+
+    try {
+      const response = await axios.post('http://localhost:8080/translate', {
+        text: recognizedText.join(' '), // Combine all recognized text
+        targetLanguage,
+      });
+
+      setTranslatedText(response.data.translatedText);
+      setErrorMessage('');
+    } catch (error) {
+      console.error('Error translating text:', error);
+      setErrorMessage('Error translating text.');
     }
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold underline">AWS Textract Demo</h1>
+    <div className="max-w-md mx-auto p-4">
+      <h1 className="text-3xl font-bold text-center text-gray-700">AWS Textract + Translate Demo</h1>
 
-      <div>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <button onClick={handleFileUpload}>Upload and Process</button>
+      {errorMessage && <p className="text-red-500 text-center">{errorMessage}</p>}
+
+      <div className="flex flex-col items-center mt-4">
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="mb-4 p-2 border rounded-lg"
+        />
+        <button
+          onClick={handleFileUpload}
+          className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
+        >
+          Upload and Process
+        </button>
       </div>
 
-      <div>
+      <div className="mt-4">
         {recognizedText.length > 0 ? (
-          <ul>
-            {recognizedText.map((text, index) => (
-              <li key={index}>{text}</li>
-            ))}
-          </ul>
+          <div>
+            <h2 className="text-lg font-bold">Recognized Text:</h2>
+            <ul>
+              {recognizedText.map((text, index) => (
+                <li key={index} className="py-2 border-b">{text}</li>
+              ))}
+            </ul>
+
+            <div className="mt-4">
+              <select
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                className="p-2 border rounded-lg w-full"
+              >
+                <option value="">Select Target Language</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="zh">Chinese</option>
+                <option value="hi">Hindi</option>
+              </select>
+              <button
+                onClick={handleTranslate}
+                className="bg-green-500 text-white p-2 rounded-lg mt-2 hover:bg-green-600 w-full"
+              >
+                Translate
+              </button>
+            </div>
+          </div>
         ) : (
-          <p>No recognized text yet. Upload an image.</p>
+          <p className="text-center text-gray-500">No recognized text yet. Upload an image.</p>
         )}
       </div>
+
+      {translatedText && (
+        <div className="mt-4">
+          <h2 className="text-lg font-bold">Translated Text:</h2>
+          <p className="p-2 border rounded-lg bg-gray-100">{translatedText}</p>
+        </div>
+      )}
     </div>
   );
 }
