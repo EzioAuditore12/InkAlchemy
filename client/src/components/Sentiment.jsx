@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { analyzeSentiment } from '../services/api';
 
-const Sentiment = () => {
+const Sentiment = ({ copyToClipboard }) => {
   const [text, setText] = useState('');
   const [sentimentResult, setSentimentResult] = useState(null);
 
@@ -18,9 +18,7 @@ const Sentiment = () => {
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
       <div className="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-          Sentiment Analysis
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sentiment Analysis</h2>
         <textarea
           className="w-full h-32 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
           value={text}
@@ -35,12 +33,15 @@ const Sentiment = () => {
         </button>
         {sentimentResult && (
           <div className="mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
-            <p className="text-lg font-semibold text-gray-700">
-              Sentiment: <span className="font-bold">{sentimentResult.sentiment}</span>
-            </p>
-            <pre className="bg-gray-100 p-3 mt-2 rounded-lg text-sm overflow-x-auto">
-              {JSON.stringify(sentimentResult.sentimentScore, null, 2)}
-            </pre>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Sentiment:</h3>
+            <p className="text-gray-600">{sentimentResult.sentiment}</p>
+            <button
+              onClick={() => copyToClipboard(sentimentResult.sentiment)}
+              className="mt-2 bg-green-500 text-white py-1 px-3 rounded-lg hover:bg-green-600 focus:outline-none"
+            >
+              Copy Sentiment
+            </button>
+            <pre className="text-sm text-gray-600 mt-4">{JSON.stringify(sentimentResult.sentimentScore, null, 2)}</pre>
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { uploadImageForTextract } from '../services/api';
 
-const Textract = () => {
+const Textract = ({ copyToClipboard }) => {
   const [image, setImage] = useState(null);
   const [extractedText, setExtractedText] = useState([]);
 
@@ -24,14 +24,12 @@ const Textract = () => {
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
       <div className="w-full max-w-lg bg-white shadow-md rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Textract - Image to Text
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Textract (Home)</h2>
         <input
           type="file"
           accept="image/*"
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-700 border rounded-lg cursor-pointer focus:ring-2 focus:ring-blue-400 focus:outline-none mb-4"
+          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
         />
         <button
           onClick={handleUpload}
@@ -39,18 +37,19 @@ const Textract = () => {
         >
           Extract Text
         </button>
-        {extractedText.length > 0 && (
-          <div className="mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
-              Extracted Text:
-            </h3>
-            <ul className="list-disc list-inside text-gray-600 space-y-2">
-              {extractedText.map((line, idx) => (
-                <li key={idx}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <ul className="mt-6 bg-gray-50 p-4 rounded-lg shadow-inner">
+          {extractedText.map((line, idx) => (
+            <li key={idx} className="flex justify-between items-center">
+              <span className="text-gray-600">{line}</span>
+              <button
+                onClick={() => copyToClipboard(line)}
+                className="text-blue-500 text-sm hover:underline"
+              >
+                Copy
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
