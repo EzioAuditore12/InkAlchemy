@@ -4,7 +4,7 @@ const router = express.Router();
 
 AWS.config.update({ region: 'ap-south-1' ,
     credentials: new AWS.Credentials('AKIAXNGUVAKSQOE23HV2', 'oSbwiCPAMR/mNnjBvfuf5PB80gTa6oPIbAYcJn1+'),
-}); // Adjust region as needed
+}); 
 const comprehend = new AWS.Comprehend();
 
 router.post('/sentiment', async (req, res) => {
@@ -12,7 +12,7 @@ router.post('/sentiment', async (req, res) => {
   try {
     const params = {
       Text: text,
-      LanguageCode: 'en', // Adjust as per your use case
+      LanguageCode: 'en', 
     };
 
     const result = await comprehend.detectSentiment(params).promise();
